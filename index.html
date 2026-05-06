@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>CPU Debugger Visual</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0a1f;
+      color: white;
+      height: 100vh;
+      display: flex;
+    }
+
+    .container {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+      padding: 20px;
+      width: 100%;
+    }
+
+    .card {
+      background: #1e1b3a;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 0 20px rgba(124, 58, 237, 0.2);
+    }
+
+    .code {
+      font-family: monospace;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .line {
+      padding: 6px 10px;
+      border-radius: 8px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .line-number {
+      color: #888;
+      width: 30px;
+    }
+
+    .active {
+      background: #7c3aed;
+      box-shadow: 0 0 10px #7c3aed;
+    }
+
+    .right {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    td, th {
+      padding: 10px;
+      border-bottom: 1px solid #333;
+      text-align: left;
+    }
+
+    select, input {
+      padding: 8px;
+      border-radius: 8px;
+      border: none;
+      background: #2a2555;
+      color: white;
+      margin-bottom: 10px;
+      width: 100%;
+    }
+
+    button {
+      background: #7c3aed;
+      border: none;
+      padding: 10px;
+      border-radius: 10px;
+      color: white;
+      cursor: pointer;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Código estilo debugger -->
+  <div class="card">
+    <h2>Debugger</h2>
+    <div id="code" class="code"></div>
+  </div>
+
+  <div class="right">
+
+    <!-- Estado em tempo real -->
+    <div class="card">
+      <h2>Variáveis</h2>
+      <table>
+        <tr><th>Variável</th><th>Valor</th></tr>
+        <tr><td>AC</td><td id="ac">0</td></tr>
+      </table>
+    </div>
+
+    <!-- Controle -->
+    <div class="card">
+      <h2>Controle</h2>
+
+      <select id="instrucao">
+        <option>LOAD</option>
+        <option>ADD</option>
+        <option>SUB</option>
+        <option>PRINT</option>
+      </select>
+
+      <input type="number" id="valor" placeholder="Valor">
+
+      <button onclick="addInstruction()">Adicionar instrução</button>
+      <button onclick="runProgram()">Executar</button>
+      <button onclick="stepProgram()">Step</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let programa = [
+  { instrucao: "LOAD", valor: 5 },
+  { instrucao: "ADD", valor: 10 },
+  { instrucao: "PRINT", valor: null }
+];
+
+let ac = 0;
+let currentLine = -1;
+let stepIndex = 0;
+
+function render() {
+  const codeDiv = document.getElementById("code");
+  codeDiv.innerHTML = "";
+
+  programa.forEach((linha, index) => {
+    const div = document.createElement("div");
+    div.className = "line" + (index === currentLine ? " active" : "");
+
+    div.innerHTML = `
+      <span class="line-number">${index}</span>
+      <span>(${linha.instrucao}, ${linha.valor})</span>
+    `;
+
+    codeDiv.appendChild(div);
+  });
+
+  document.getElementById("ac").textContent = ac;
+}
+
+function addInstruction() {
+  const instrucao = document.getElementById("instrucao").value;
+  const valor = document.getElementById("valor").value;
+
+  programa.push({
+    instrucao,
+    valor: instrucao === "PRINT" ? null : Number(valor)
+  });
+
+  render();
+}
+
+function execute(instrucao, valor) {
+  if (instrucao === "LOAD") ac = valor;
+  if (instrucao === "ADD") ac += valor;
+  if (instrucao === "SUB") ac -= valor;
+  if (instrucao === "PRINT") console.log("AC =", ac);
+}
+
+async function runProgram() {
+  for (let i = 0; i < programa.length; i++) {
+    currentLine = i;
+    render();
+
+    await new Promise(r => setTimeout(r, 700));
+
+    execute(programa[i].instrucao, programa[i].valor);
+    render();
+  }
+
+  currentLine = -1;
+  stepIndex = 0;
+  render();
+}
+
+function stepProgram() {
+  if (stepIndex >= programa.length) return;
+
+  currentLine = stepIndex;
+  execute(programa[stepIndex].instrucao, programa[stepIndex].valor);
+  stepIndex++;
+
+  render();
+}
+
+render();
+</script>
+
+</body>
+</html>
