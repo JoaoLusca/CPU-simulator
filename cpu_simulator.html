@@ -1,0 +1,767 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap');
+
+  .cpu-root {
+    --bg: #0d0a1e;
+    --card: #13103a;
+    --card2: #1a1640;
+    --border: #2e2860;
+    --accent: #7c3aed;
+    --accent2: #9d5cff;
+    --accent-glow: #7c3aed44;
+    --text: #e2deff;
+    --muted: #8b83b8;
+    --green: #22d3a0;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    min-height: 580px;
+    border-radius: 16px;
+    padding: 16px;
+    color: var(--text);
+    box-sizing: border-box;
+  }
+
+  .cpu-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .cpu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    box-sizing: border-box;
+  }
+
+  .panel-code {
+    grid-row: span 2;
+    display: flex;
+    flex-direction: column;
+    min-height: 520px;
+  }
+
+  .panel-state {}
+  .panel-control {}
+
+  .code-list {
+    flex: 1;
+    overflow-y: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    max-height: 240px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .code-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    margin-bottom: 3px;
+    cursor: default;
+    transition: background 0.2s, border-color 0.2s;
+    border: 1px solid transparent;
+    position: relative;
+  }
+
+  .code-line:hover .line-delete {
+    opacity: 1;
+  }
+
+  .code-line.active {
+    background: #2d1b69;
+    border-color: var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow);
+  }
+
+  .code-line.done {
+    opacity: 0.5;
+  }
+
+  .line-num {
+    color: var(--muted);
+    font-size: 11px;
+    min-width: 20px;
+    text-align: right;
+    user-select: none;
+  }
+
+  .line-arrow {
+    color: var(--accent2);
+    font-size: 11px;
+    min-width: 10px;
+  }
+
+  .line-instr {
+    color: #c084fc;
+    font-weight: 700;
+    min-width: 44px;
+  }
+
+  .line-val {
+    color: var(--yellow);
+  }
+
+  .line-delete {
+    opacity: 0;
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--red);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 2px;
+    transition: opacity 0.15s;
+    line-height: 1;
+  }
+
+  .empty-code {
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+    margin-top: 24px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .state-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .state-card {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  .state-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .state-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent2);
+    transition: color 0.2s;
+  }
+
+  .state-value.changed {
+    color: var(--green);
+  }
+
+  .mem-table {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    width: 100%;
+  }
+
+  .mem-table tr td {
+    padding: 3px 6px;
+  }
+
+  .mem-table td:first-child {
+    color: var(--muted);
+  }
+
+  .mem-table td:last-child {
+    color: var(--yellow);
+    text-align: right;
+  }
+
+  .output-log {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    max-height: 70px;
+    overflow-y: auto;
+    margin-top: 8px;
+    min-height: 36px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  .log-entry {
+    color: var(--green);
+    line-height: 1.7;
+  }
+
+  .log-entry.err {
+    color: var(--red);
+  }
+
+  .ctrl-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+    align-items: center;
+  }
+
+  .ctrl-select, .ctrl-input {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .ctrl-select:focus, .ctrl-input:focus {
+    border-color: var(--accent);
+  }
+
+  .ctrl-select {
+    min-width: 90px;
+  }
+
+  .ctrl-input {
+    width: 70px;
+  }
+
+  .btn {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    font-family: 'Inter', sans-serif;
+    white-space: nowrap;
+  }
+
+  .btn:active {
+    transform: scale(0.97);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    background: var(--accent2);
+    border-color: var(--accent2);
+  }
+
+  .btn-secondary {
+    background: var(--card2);
+    color: var(--text);
+  }
+
+  .btn-secondary:hover:not(:disabled) {
+    background: #252060;
+    border-color: var(--accent);
+  }
+
+  .btn-danger {
+    background: transparent;
+    color: var(--red);
+    border-color: #7f1d1d;
+  }
+
+  .btn-danger:hover:not(:disabled) {
+    background: #451a1a;
+  }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .slider-row label {
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  input[type=range] {
+    flex: 1;
+    accent-color: var(--accent);
+    height: 4px;
+  }
+
+  .slider-val {
+    font-size: 12px;
+    color: var(--accent2);
+    font-family: 'JetBrains Mono', monospace;
+    min-width: 38px;
+    text-align: right;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 6px 10px;
+    background: var(--card2);
+    border-radius: 8px;
+    font-size: 12px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+
+  .status-dot.running {
+    background: var(--green);
+    animation: pulse 1s infinite;
+  }
+
+  .status-dot.done {
+    background: var(--accent2);
+  }
+
+  .status-dot.error {
+    background: var(--red);
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 99px;
+    margin-top: 8px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 99px;
+    transition: width 0.3s;
+  }
+
+  .pc-badge {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+</style>
+
+<div class="cpu-root" id="root">
+  <h2 class="sr-only">Simulador visual de execução de CPU educacional</h2>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <i class="ti ti-cpu" style="font-size:20px;color:#7c3aed" aria-hidden="true"></i>
+      <span style="font-size:15px;font-weight:600;color:#e2deff;">CPU Simulator</span>
+      <span style="font-size:11px;color:#8b83b8;margin-left:4px;">v1.0</span>
+    </div>
+    <span class="pc-badge">PC: <span id="pc-display">—</span></span>
+  </div>
+
+  <div class="cpu-grid">
+    <div class="panel panel-code">
+      <div class="cpu-title"><i class="ti ti-code" aria-hidden="true"></i> Programa</div>
+      <div class="code-list" id="code-list">
+        <div class="empty-code" id="empty-msg">// Nenhuma instrução<br>// Adicione instruções abaixo</div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+    </div>
+
+    <div class="panel panel-state">
+      <div class="cpu-title"><i class="ti ti-activity" aria-hidden="true"></i> Estado da CPU</div>
+      <div class="state-grid">
+        <div class="state-card">
+          <div class="state-label">Acumulador (AC)</div>
+          <div class="state-value" id="ac-display">0</div>
+        </div>
+        <div class="state-card">
+          <div class="state-label">Ciclos</div>
+          <div class="state-value" id="cycles-display">0</div>
+        </div>
+      </div>
+      <div class="cpu-title" style="margin-top:4px"><i class="ti ti-database" aria-hidden="true"></i> Memória</div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;min-height:32px;">
+        <table class="mem-table" id="mem-table"><tbody><tr><td colspan="2" style="color:var(--muted);font-size:11px;">vazia</td></tr></tbody></table>
+      </div>
+      <div class="cpu-title" style="margin-top:10px"><i class="ti ti-terminal-2" aria-hidden="true"></i> Saída</div>
+      <div class="output-log" id="output-log"><span style="color:var(--muted);font-size:11px;">// PRINT aqui</span></div>
+    </div>
+
+    <div class="panel panel-control">
+      <div class="cpu-title"><i class="ti ti-adjustments-horizontal" aria-hidden="true"></i> Controles</div>
+      <div class="ctrl-row">
+        <select class="ctrl-select" id="instr-select">
+          <option value="LOAD">LOAD</option>
+          <option value="ADD">ADD</option>
+          <option value="SUB">SUB</option>
+          <option value="MUL">MUL</option>
+          <option value="STORE">STORE</option>
+          <option value="PRINT">PRINT</option>
+          <option value="HALT">HALT</option>
+        </select>
+        <input class="ctrl-input" id="instr-val" type="number" placeholder="valor" value="0" />
+        <button class="btn btn-primary" id="btn-add"><i class="ti ti-plus" aria-hidden="true"></i> Add</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-run"><i class="ti ti-player-play" aria-hidden="true"></i> Executar</button>
+        <button class="btn btn-secondary" id="btn-step"><i class="ti ti-player-skip-forward" aria-hidden="true"></i> Passo</button>
+        <button class="btn btn-secondary" id="btn-reset"><i class="ti ti-refresh" aria-hidden="true"></i> Reset</button>
+        <button class="btn btn-danger" id="btn-clear"><i class="ti ti-trash" aria-hidden="true"></i> Limpar</button>
+      </div>
+      <div class="slider-row">
+        <label><i class="ti ti-gauge" aria-hidden="true"></i> Velocidade</label>
+        <input type="range" id="speed-slider" min="100" max="2000" step="100" value="700" />
+        <span class="slider-val" id="speed-val">700ms</span>
+      </div>
+      <div class="status-bar">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text" style="color:var(--muted);">Aguardando instruções...</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  let program = [];
+  let ac = 0;
+  let memory = {};
+  let cycles = 0;
+  let pc = 0;
+  let running = false;
+  let stepping = false;
+  let stepResolve = null;
+  let speed = 700;
+  let acChanged = false;
+  let acTimer = null;
+
+  const codeList = document.getElementById('code-list');
+  const emptyMsg = document.getElementById('empty-msg');
+  const acDisplay = document.getElementById('ac-display');
+  const cyclesDisplay = document.getElementById('cycles-display');
+  const memTable = document.getElementById('mem-table').querySelector('tbody');
+  const outputLog = document.getElementById('output-log');
+  const pcDisplay = document.getElementById('pc-display');
+  const progressFill = document.getElementById('progress');
+  const statusDot = document.getElementById('status-dot');
+  const statusText = document.getElementById('status-text');
+  const speedSlider = document.getElementById('speed-slider');
+  const speedVal = document.getElementById('speed-val');
+  const instrSelect = document.getElementById('instr-select');
+  const instrVal = document.getElementById('instr-val');
+  const btnAdd = document.getElementById('btn-add');
+  const btnRun = document.getElementById('btn-run');
+  const btnStep = document.getElementById('btn-step');
+  const btnReset = document.getElementById('btn-reset');
+  const btnClear = document.getElementById('btn-clear');
+
+  instrSelect.addEventListener('change', () => {
+    const noVal = instrSelect.value === 'PRINT' || instrSelect.value === 'HALT';
+    instrVal.disabled = noVal;
+    instrVal.style.opacity = noVal ? '0.4' : '1';
+  });
+
+  speedSlider.addEventListener('input', () => {
+    speed = parseInt(speedSlider.value);
+    speedVal.textContent = speed + 'ms';
+  });
+
+  btnAdd.addEventListener('click', addInstruction);
+  instrVal.addEventListener('keydown', e => { if (e.key === 'Enter') addInstruction(); });
+
+  function addInstruction() {
+    const instr = instrSelect.value;
+    const val = instrVal.value === '' ? 0 : parseFloat(instrVal.value);
+    const noVal = instr === 'PRINT' || instr === 'HALT';
+    program.push({ instr, val: noVal ? null : val });
+    renderCode();
+    if (!running) setStatus('idle', `Instrução ${instr} adicionada (linha ${program.length})`);
+  }
+
+  function renderCode(activeLine = -1) {
+    if (program.length === 0) {
+      codeList.innerHTML = '<div class="empty-code" id="empty-msg">// Nenhuma instrução<br>// Adicione instruções abaixo</div>';
+      progressFill.style.width = '0%';
+      pcDisplay.textContent = '—';
+      return;
+    }
+    codeList.innerHTML = '';
+    program.forEach((p, i) => {
+      const line = document.createElement('div');
+      line.className = 'code-line' + (i === activeLine ? ' active' : '') + (i < activeLine ? ' done' : '');
+      line.id = 'line-' + i;
+      line.innerHTML = `
+        <span class="line-num">${String(i + 1).padStart(2, '0')}</span>
+        <span class="line-arrow">${i === activeLine ? '▶' : ' '}</span>
+        <span class="line-instr">${p.instr}</span>
+        ${p.val !== null ? `<span class="line-val">${p.val}</span>` : ''}
+        ${!running ? `<button class="line-delete" data-i="${i}" title="Remover">✕</button>` : ''}
+      `;
+      codeList.appendChild(line);
+    });
+
+    if (!running) {
+      codeList.querySelectorAll('.line-delete').forEach(btn => {
+        btn.addEventListener('click', e => {
+          const idx = parseInt(e.target.dataset.i);
+          program.splice(idx, 1);
+          renderCode();
+        });
+      });
+    }
+
+    if (activeLine >= 0) {
+      const el = document.getElementById('line-' + activeLine);
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      progressFill.style.width = ((activeLine / program.length) * 100) + '%';
+      pcDisplay.textContent = activeLine;
+    } else {
+      progressFill.style.width = '0%';
+      pcDisplay.textContent = '—';
+    }
+  }
+
+  function updateAC(val) {
+    ac = val;
+    acDisplay.textContent = ac;
+    acDisplay.classList.add('changed');
+    clearTimeout(acTimer);
+    acTimer = setTimeout(() => acDisplay.classList.remove('changed'), 600);
+  }
+
+  function updateMem() {
+    const keys = Object.keys(memory);
+    if (keys.length === 0) {
+      memTable.innerHTML = '<tr><td colspan="2" style="color:var(--muted);font-size:11px;">vazia</td></tr>';
+      return;
+    }
+    memTable.innerHTML = keys.map(k => `<tr><td>${k}</td><td>${memory[k]}</td></tr>`).join('');
+  }
+
+  function log(msg, isErr) {
+    if (outputLog.querySelector('span[style]')) outputLog.innerHTML = '';
+    const entry = document.createElement('div');
+    entry.className = 'log-entry' + (isErr ? ' err' : '');
+    entry.textContent = `> ${msg}`;
+    outputLog.appendChild(entry);
+    outputLog.scrollTop = outputLog.scrollHeight;
+  }
+
+  function setStatus(state, msg) {
+    statusText.textContent = msg;
+    statusDot.className = 'status-dot';
+    if (state === 'running') statusDot.classList.add('running');
+    else if (state === 'done') statusDot.classList.add('done');
+    else if (state === 'error') statusDot.classList.add('error');
+  }
+
+  function setRunning(val) {
+    running = val;
+    btnRun.disabled = val;
+    btnStep.disabled = val;
+    btnAdd.disabled = val;
+    btnClear.disabled = val;
+    instrSelect.disabled = val;
+    instrVal.disabled = val;
+  }
+
+  function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  function executeInstruction(p) {
+    switch (p.instr) {
+      case 'LOAD':
+        updateAC(p.val);
+        return `LOAD ${p.val} → AC = ${ac}`;
+      case 'ADD':
+        updateAC(Math.round((ac + p.val) * 1e10) / 1e10);
+        return `ADD ${p.val} → AC = ${ac}`;
+      case 'SUB':
+        updateAC(Math.round((ac - p.val) * 1e10) / 1e10);
+        return `SUB ${p.val} → AC = ${ac}`;
+      case 'MUL':
+        updateAC(Math.round((ac * p.val) * 1e10) / 1e10);
+        return `MUL ${p.val} → AC = ${ac}`;
+      case 'STORE':
+        memory['M' + p.val] = ac;
+        updateMem();
+        return `STORE → M${p.val} = ${ac}`;
+      case 'PRINT':
+        log('AC = ' + ac);
+        return 'PRINT → ' + ac;
+      case 'HALT':
+        return '__HALT__';
+      default:
+        return null;
+    }
+  }
+
+  async function runProgram() {
+    if (program.length === 0) { setStatus('error', 'Nenhuma instrução no programa'); return; }
+    setRunning(true);
+    pc = 0; ac = 0; memory = {}; cycles = 0;
+    updateAC(0);
+    cyclesDisplay.textContent = 0;
+    updateMem();
+    setStatus('running', 'Executando programa...');
+
+    while (pc < program.length) {
+      renderCode(pc);
+      await delay(speed);
+      const p = program[pc];
+      const result = executeInstruction(p);
+      cycles++;
+      cyclesDisplay.textContent = cycles;
+      if (result === '__HALT__') {
+        setStatus('done', `HALT em linha ${pc + 1} — ciclos: ${cycles}`);
+        renderCode(pc);
+        setRunning(false);
+        return;
+      }
+      pc++;
+    }
+
+    progressFill.style.width = '100%';
+    renderCode(-1);
+    setStatus('done', `Concluído — ${cycles} ciclo(s) executado(s)`);
+    setRunning(false);
+  }
+
+  btnRun.addEventListener('click', runProgram);
+
+  btnStep.addEventListener('click', async function() {
+    if (program.length === 0) { setStatus('error', 'Nenhuma instrução no programa'); return; }
+    if (pc === 0 && !stepping) {
+      stepping = true;
+      ac = 0; cycles = 0; memory = {};
+      updateAC(0); cyclesDisplay.textContent = 0; updateMem();
+      outputLog.innerHTML = '<span style="color:var(--muted);font-size:11px;">// PRINT aqui</span>';
+    }
+    if (pc >= program.length) {
+      stepping = false; pc = 0;
+      renderCode(-1);
+      setStatus('done', 'Fim do programa (modo passo)');
+      return;
+    }
+    setRunning(true);
+    renderCode(pc);
+    await delay(180);
+    const p = program[pc];
+    const result = executeInstruction(p);
+    cycles++;
+    cyclesDisplay.textContent = cycles;
+    setStatus('running', `Linha ${pc + 1}: ${p.instr}${p.val !== null ? ' ' + p.val : ''}`);
+    pc++;
+    if (result === '__HALT__' || pc >= program.length) {
+      stepping = false; pc = 0;
+      renderCode(-1);
+      progressFill.style.width = '100%';
+      setStatus('done', `Pronto — ${cycles} ciclo(s)`);
+    } else {
+      renderCode(pc);
+    }
+    setRunning(false);
+    btnStep.disabled = false;
+    btnRun.disabled = false;
+  });
+
+  btnReset.addEventListener('click', () => {
+    if (running) return;
+    pc = 0; ac = 0; memory = {}; cycles = 0; stepping = false;
+    updateAC(0); cyclesDisplay.textContent = 0; updateMem();
+    outputLog.innerHTML = '<span style="color:var(--muted);font-size:11px;">// PRINT aqui</span>';
+    renderCode();
+    setStatus('idle', 'Estado resetado');
+  });
+
+  btnClear.addEventListener('click', () => {
+    if (running) return;
+    program = []; pc = 0; ac = 0; memory = {}; cycles = 0; stepping = false;
+    updateAC(0); cyclesDisplay.textContent = 0; updateMem();
+    outputLog.innerHTML = '<span style="color:var(--muted);font-size:11px;">// PRINT aqui</span>';
+    renderCode();
+    setStatus('idle', 'Programa limpo');
+  });
+
+  program = [
+    { instr: 'LOAD', val: 10 },
+    { instr: 'ADD', val: 5 },
+    { instr: 'STORE', val: 1 },
+    { instr: 'LOAD', val: 3 },
+    { instr: 'MUL', val: 4 },
+    { instr: 'ADD', val: 0 },
+    { instr: 'PRINT', val: null },
+    { instr: 'HALT', val: null },
+  ];
+  program[5].val = 0;
+  program[5].instr = 'SUB';
+  program[5].val = 2;
+
+  program = [
+    { instr: 'LOAD', val: 10 },
+    { instr: 'ADD', val: 5 },
+    { instr: 'STORE', val: 1 },
+    { instr: 'SUB', val: 2 },
+    { instr: 'PRINT', val: null },
+    { instr: 'HALT', val: null },
+  ];
+
+  renderCode();
+  setStatus('idle', 'Programa de exemplo carregado');
+})();
+</script>
